@@ -157,7 +157,6 @@ struct ProfileView: View {
                                 Spacer()
                                 Picker("Language", selection: $selectedLanguage) {
                                     Text("English").tag("English")
-                                    Text("Russian").tag("Russian")
                                 }
                                 .pickerStyle(.menu)
                                 .labelsHidden()
@@ -176,6 +175,20 @@ struct ProfileView: View {
                                 Toggle("", isOn: $notificationsEnabled)
                                     .labelsHidden()
                                     .tint(yolkYellow)
+                            }
+                            
+                            
+                            Button {
+                                UIApplication.shared.open(URL(string: "https://eggtimerpluspro.com/privacy-policy.html")!)
+                            } label: {
+                                HStack {
+                                    Text("Privacy Policy")
+                                        .font(.subheadline)
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.black)
+                                }
                             }
                         }
                         .padding(.vertical, 15)

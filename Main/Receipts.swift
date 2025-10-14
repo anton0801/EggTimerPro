@@ -1,5 +1,6 @@
 
 import SwiftUI
+import WebKit
 import PhotosUI
 
 struct Recipe: Identifiable, Codable {
@@ -87,6 +88,56 @@ extension Color {
         )
     }
 }
+
+
+struct WebViewFactory {
+    
+    static func generateMainWebView(using config: WKWebViewConfiguration? = nil) -> WKWebView {
+        let setup = config ?? createSetup()
+        return WKWebView(frame: .zero, configuration: setup)
+    }
+    
+    private static func createSetup() -> WKWebViewConfiguration {
+        let setup = WKWebViewConfiguration()
+        setup.allowsInlineMediaPlayback = true
+        setup.preferences = createPrefs()
+        setup.defaultWebpagePreferences = createPagePrefs()
+        setup.requiresUserActionForMediaPlayback = false
+        return setup
+    }
+    
+    private static func createPrefs() -> WKPreferences {
+        let prefs = WKPreferences()
+        prefs.javaScriptEnabled = true
+        prefs.javaScriptCanOpenWindowsAutomatically = true
+        return prefs
+    }
+    
+    private static func createPagePrefs() -> WKWebpagePreferences {
+        let prefs = WKWebpagePreferences()
+        prefs.allowsContentJavaScript = true
+        return prefs
+    }
+    
+    static func needsToClearExtras(_ main: WKWebView, _ extras: [WKWebView], activeLink: URL?) -> Bool {
+        if !extras.isEmpty {
+            extras.forEach { $0.removeFromSuperview() }
+            if let link = activeLink {
+                main.load(URLRequest(url: link))
+            }
+            return true
+        } else if main.canGoBack {
+            main.goBack()
+            return false
+        }
+        return false
+    }
+}
+
+extension Notification.Name {
+    static let uiEvents = Notification.Name("ui_actions")
+}
+
 
 struct RecipesView: View {
     @EnvironmentObject var recipeData: RecipeData // Shared recipe data

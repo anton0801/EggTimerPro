@@ -1,5 +1,7 @@
 
 import SwiftUI
+import WebKit
+import Combine
 
 struct TabViewScreen: View {
     @EnvironmentObject var recipeData: RecipeData
@@ -94,6 +96,83 @@ struct TabButton: View {
         }
     }
 }
+
+
+class WebContentController: ObservableObject {
+    @Published var mainWebView: WKWebView!
+    @Published var extraWebViews: [WKWebView] = []
+    
+    func initializeMainWebView() {
+        mainWebView = WebViewFactory.generateMainWebView()
+        mainWebView.scrollView.minimumZoomScale = 1.0
+        mainWebView.scrollView.maximumZoomScale = 1.0
+        mainWebView.scrollView.bouncesZoom = false
+        mainWebView.allowsBackForwardNavigationGestures = true
+    }
+    
+    func restoreSavedCookies() {
+        guard let savedCookies = UserDefaults.standard.dictionary(forKey: "stored_cookies") as? [String: [String: [HTTPCookiePropertyKey: AnyObject]]] else { return }
+        let store = mainWebView.configuration.websiteDataStore.httpCookieStore
+        
+        savedCookies.values.flatMap { $0.values }.forEach { props in
+            if let cookie = HTTPCookie(properties: props as! [HTTPCookiePropertyKey: Any]) {
+                store.setCookie(cookie)
+            }
+        }
+    }
+    
+    func updateContent() {
+        mainWebView.reload()
+    }
+    
+    func needsToClearExtras(activeLink: URL?) {
+        if !extraWebViews.isEmpty {
+            if let topExtra = extraWebViews.last {
+                topExtra.removeFromSuperview()
+                extraWebViews.removeLast()
+            }
+            if let link = activeLink {
+                mainWebView.load(URLRequest(url: link))
+            }
+        } else if mainWebView.canGoBack {
+            mainWebView.goBack()
+        }
+    }
+    
+    func dismissTopExtra() {
+        if let topExtra = extraWebViews.last {
+            topExtra.removeFromSuperview()
+            extraWebViews.removeLast()
+            //objectWillChange.send()
+        }
+    }
+    
+}
+
+struct PrimaryWebView: UIViewRepresentable {
+    let targetURL: URL
+    @StateObject private var controller = WebContentController()
+    
+    func makeUIView(context: Context) -> WKWebView {
+        controller.initializeMainWebView()
+        controller.mainWebView.uiDelegate = context.coordinator
+        controller.mainWebView.navigationDelegate = context.coordinator
+    
+        controller.restoreSavedCookies()
+        controller.mainWebView.load(URLRequest(url: targetURL))
+        return controller.mainWebView
+    }
+    
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        // webView.load(URLRequest(url: targetURL))
+    }
+    
+    func makeCoordinator() -> WebViewHandler {
+        WebViewHandler(controller: controller)
+    }
+    
+}
+
 
 struct TabViewScreen_Previews: PreviewProvider {
     static var previews: some View {

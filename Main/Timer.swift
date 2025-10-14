@@ -1,5 +1,6 @@
 
 import SwiftUI
+import WebKit
 
 struct TimerView: View {
     enum CookingStep {
@@ -289,4 +290,48 @@ struct TimerView_Previews: PreviewProvider {
                 .environmentObject(TimerState(onTimerFinish: {}))
         }
     }
+}
+
+extension WebViewHandler {
+    @objc func processSwipe(_ gesture: UIScreenEdgePanGestureRecognizer) {
+        if gesture.state == .ended {
+            guard let activeView = gesture.view as? WKWebView else { return }
+            if activeView.canGoBack {
+                activeView.goBack()
+            } else if let topExtra = webContentController.extraWebViews.last, activeView == topExtra {
+                webContentController.needsToClearExtras(activeLink: nil)
+            }
+        }
+    }
+}
+
+struct InterfaceContainer: View {
+    
+    @State var interfaceLink: String = ""
+    
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            if let link = URL(string: interfaceLink) {
+                PrimaryWebView(
+                    targetURL: link
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea(.keyboard, edges: .bottom)
+            }
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            interfaceLink = UserDefaults.standard.string(forKey: "temp_url") ?? (UserDefaults.standard.string(forKey: "saved_url") ?? "")
+            if let temp = UserDefaults.standard.string(forKey: "temp_url"), !temp.isEmpty {
+                UserDefaults.standard.set(nil, forKey: "temp_url")
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LoadTempURL"))) { _ in
+            if (UserDefaults.standard.string(forKey: "temp_url") ?? "") != "" {
+                interfaceLink = UserDefaults.standard.string(forKey: "temp_url") ?? ""
+                UserDefaults.standard.set(nil, forKey: "temp_url")
+            }
+        }
+    }
+    
 }
