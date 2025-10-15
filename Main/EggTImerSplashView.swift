@@ -263,7 +263,7 @@ struct EggTImerSplashView: View {
                     EmptyView()
                 case .browser:
                     if let url = controller.browserURL {
-                        // InterfaceContainer()
+                        InterfaceContainer()
                     } else {
                         ContentView()
                     }
